@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Hummingbird</string>
+    
+	<string name="intro_slide1_1">Don\'t waste your time\nmonitoring for the articles.</string>
+	<string name="intro_slide_icon">icon</string>
+	<string name="intro_slide1_2">Let HummingBird feed them for you.</string>
+	
+	<string name="intro_slide2_1">Now type yout first keyword\nand press "Start" button.</string>
+	<string name="intro_slide2_2">HummingBird will buzz for you\nlooking for the latest news.</string>
+	<string name="intro_slide_hint">Your first keyword</string>
+</resources>

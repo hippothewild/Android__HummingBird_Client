@@ -1,0 +1,14 @@
+<resources>
+    <!-- Holyday Sparkle color scheme -->
+    <!-- http://design-seeds.com/index.php/home/entry/holiday-sparkle1 -->
+	<color name="ivory">#ffeacf</color>
+	<color name="yolk">#fab86c</color>
+	<color name="orangered">#c7503e</color>
+	<color name="charcoal">#25242e</color>
+	<color name="oceanblue">#317891</color>
+	<color name="skyblue">#69b0c7</color>
+	
+	<!-- Basic colors. -->
+	<color name="ashgray">#BBBBBB</color>
+	<color name="transparent">#00ffffff</color>
+</resources>

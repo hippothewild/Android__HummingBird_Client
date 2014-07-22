@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+android:layout_width="fill_parent"
+android:layout_height="fill_parent"
+android:orientation="vertical" >
+
+	<ViewFlipper
+		android:id="@+id/intro_flipper"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+		android:layout_margin="6dip">
+         
+        <!--  1st flipper view -->
+        	<LinearLayout
+            	android:layout_width="fill_parent"
+				android:layout_height="fill_parent"
+				android:gravity="center"
+				android:orientation="vertical" >
+				<TextView
+                	android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="10"
+                    android:layout_marginTop="30dp"
+                    android:paddingLeft="15dp"
+                    android:gravity="center"
+                    android:text="@string/intro_slide1_1"
+                    android:textSize="20sp" >
+				</TextView>
+				<ImageView
+				    android:layout_width="match_parent"
+				    android:layout_height="0dp"
+				    android:layout_weight="30"
+				    android:src="@drawable/hummingbird_icon"
+				    android:contentDescription="@string/intro_slide_icon"
+				    android:scaleType="fitCenter">
+				</ImageView>
+        	    <TextView
+                	android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="20"
+                    android:paddingTop="10dp"
+                    android:gravity="top|center_horizontal"
+                    android:text="@string/intro_slide1_2"
+                    android:textSize="18sp" >
+				</TextView>
+				<!--  Login button  -->
+			</LinearLayout>
+		<!--  1st flipper view end -->
+		
+		<!--  2nd flipper view -->
+			<LinearLayout
+            	android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:gravity="center"
+                android:orientation="vertical" >
+                <TextView
+                	android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingLeft="15dp"
+                    android:text="@string/intro_slide2_1"
+                    android:textSize="20sp" >
+				</TextView>
+				<TextView
+                	android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="15dp"
+                    android:paddingLeft="15dp"
+                    android:text="@string/intro_slide2_2"
+                    android:textSize="20sp" >
+				</TextView>
+				<EditText
+				    android:id="@+id/intro_first_keyword"
+				    android:inputType="text"
+				    android:layout_width="match_parent" 
+				    android:layout_marginTop="15dp"
+				    android:paddingLeft="15dp"
+				    android:paddingRight="15dp"
+				    android:layout_height="wrap_content"
+				    android:gravity="center"
+				    android:textColor="@color/ivory"
+				    android:textColorHint="@color/ivory"
+				    android:hint="@string/intro_slide_hint"
+				    android:textSize="20sp"/>
+				<Button
+				    android:id="@+id/startButton"
+				    android:layout_width="fill_parent"
+				    android:layout_height="wrap_content"
+				    android:layout_marginTop="10dip"
+				    android:layout_marginLeft="40dip"
+				    android:layout_marginRight="40dip"
+				    android:text="Start"
+				    android:textSize="20sp"
+				    android:textStyle="bold"
+				    android:background="#33ffffff"
+				    android:textColor="@color/ivory"/>
+			</LinearLayout>
+		<!--  2nd flipper view -->
+	</ViewFlipper>
+</LinearLayout>

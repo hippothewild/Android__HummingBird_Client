@@ -1,0 +1,49 @@
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+   <!--  Main theme of application. -->
+    <style name="MainTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+		<!--  Basic Settings.  -->
+		<item name="android:windowBackground">@color/charcoal</item>
+		<item name="android:colorBackground">@color/charcoal</item>
+		<item name="android:icon">@android:color/transparent</item>
+		<item name="android:textColor">@color/ashgray</item>
+		
+		<!--  Actionbar theme settings.  -->
+		<item name="android:actionBarStyle">@style/ActionBarTheme</item>
+		<!--  Support library compatibility for ver 2.1+  -->
+		<item name="actionBarStyle">@style/ActionBarTheme</item>
+	</style>
+
+    
+    <!-- Action bar theme of application. -->
+    <style name="ActionBarTheme" parent="@style/Widget.AppCompat.ActionBar">  
+        <item name="android:titleTextStyle">@style/TitleTextColor</item>
+        <item name="android:background">@color/orangered</item>
+        <item name="android:textColor">@color/ivory</item>                   
+    </style>
+    
+    <!-- Title bar theme of application. -->
+    <style name="TitleTextColor">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/ivory</item>
+	</style>
+	
+    <style name="AppBaseTheme" parent="Theme.AppCompat.Light">
+        <!--
+            Theme customizations available in newer API levels can go in
+            res/values-vXX/styles.xml, while customizations related to
+            backward-compatibility can go here.
+        -->
+    </style>
+    
+    <style name="ButtonTheme" parent="android:Widget">
+        <item name="android:background">@color/orangered</item>
+        <item name="android:textColor">@color/ivory</item>
+    </style>
+
+    <!-- Application theme. -->
+    <style name="AppTheme" parent="AppBaseTheme">
+        <!-- All customizations that are NOT specific to a particular API-level can go here. -->
+    </style>
+
+</resources>
