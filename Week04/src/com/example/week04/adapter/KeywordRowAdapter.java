@@ -1,11 +1,25 @@
 package com.example.week04.adapter;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
-import android.annotation.SuppressLint;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -18,10 +32,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.week04.ArticleActivity;
 import com.example.week04.R;
 import com.example.week04.info.DBHelper;
 import com.example.week04.info.KeywordRowInfo;
 
+import android.os.AsyncTask;
+import android.os.Bundle;
 import android.util.Log;
 
 public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
@@ -46,7 +63,7 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent){
 		
-		KeywordRowInfo keywordRow = mList.get(position);
+		final KeywordRowInfo keywordRow = mList.get(position);
 
 		if(convertView == null){
 			convertView = mInflater.inflate(mResource, null);
@@ -54,21 +71,56 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
 		final View tempView = convertView;
 		final int pos = position;
 
+		// Add 'swipe to delete' in the row.
+		convertView.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(final View v, MotionEvent event) {
+				switch( event.getAction() ) {
+					case MotionEvent.ACTION_DOWN :
+						action_down_x = (int) event.getX();
+						break;
+					case MotionEvent.ACTION_UP :
+						final int difference = action_down_x - (int)event.getX();
+						if (difference > 40) {
+							tempView.findViewById(R.id.btn_remove).setVisibility(View.VISIBLE);
+							mList.get(pos).setButtonVisible(true);
+						}
+						else if (difference < -40) {
+							tempView.findViewById(R.id.btn_remove).setVisibility(View.GONE);
+							mList.get(pos).setButtonVisible(false);
+						}
+						else if (difference < 5 && difference > -5)	 {
+							// click.
+							Intent intent = new Intent(mContext, ArticleActivity.class);
+							Bundle b = new Bundle();
+							b.putString("keyword", keywordRow.getKeyword());
+							intent.putExtras(b);
+							mContext.startActivity(intent);
+						}
+						
+						break;
+				}
+				return true;
+		    }
+		});
+		
 		if(keywordRow != null){
-			TextView keywordName = (TextView) convertView.findViewById(R.id.keyword_name);
-			TextView keywordLastUpdate = (TextView) convertView.findViewById(R.id.keyword_last_update);
-			TextView notifyCount = (TextView) convertView.findViewById(R.id.notify_count);
+			final TextView keywordName = (TextView) convertView.findViewById(R.id.keyword_name);
+			final TextView keywordLastUpdate = (TextView) convertView.findViewById(R.id.keyword_last_update);
+			final TextView notifyCount = (TextView) convertView.findViewById(R.id.notify_count);
 			
-			keywordName.setText(keywordRow.getKeyword());
+			final String thisKeyword = keywordRow.getKeyword();
+			keywordName.setText(thisKeyword);
 			keywordLastUpdate.setText("Last Update : " + keywordRow.getLastUpdate());
-			notifyCount.setText(String.valueOf(keywordRow.getNotifyNumber()));		
+			notifyCount.setText(String.valueOf(keywordRow.getNotifyNumber()));
 			
 			// Set on-click listener to refresh button.
 			ImageView buttonRefresh = (ImageView) convertView.findViewById(R.id.btn_refresh);
 			buttonRefresh.setOnClickListener(new OnClickListener() {
 				@Override
 				public void onClick(final View v) {
-					Toast.makeText(mContext, "Refresh button clicked :: todo!", Toast.LENGTH_SHORT).show();
+					// Get articles from server and set into DB.
+					getArticleInBackground(thisKeyword, keywordRow, notifyCount);	
 				}
 			});
 			
@@ -93,8 +145,12 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
 
 					alert.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
 						public void onClick(DialogInterface dialog, int whichButton) {
-							// Remove item from DB.
 							String keyword = mList.get(pos).getKeyword();
+							
+							// Remove item from backend server.
+							deleteKeywordBackground(keyword);
+							
+							// Remove item from DB.
 							mHelper = new DBHelper(mContext);
 							SQLiteDatabase db = mHelper.getWritableDatabase();
 							String query = "DELETE FROM KEYWORDS WHERE KEYWORD='" + keyword + "';";
@@ -117,34 +173,143 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
 					alert.show(); 
 				}
 			});
+			
 		}
-		
-		convertView.setOnTouchListener(new OnTouchListener() {
-			@SuppressLint("ClickableViewAccessibility")
-			@Override
-			public boolean onTouch(final View v, MotionEvent event) {
-				switch( event.getAction() ) {
-					case MotionEvent.ACTION_DOWN :
-						action_down_x = (int) event.getX();
-						break;
-					case MotionEvent.ACTION_UP :
-						final int difference = action_down_x - (int)event.getX();
-
-						if (difference > 45) {
-							tempView.findViewById(R.id.btn_remove).setVisibility(View.VISIBLE);
-							mList.get(pos).setButtonVisible(true);
-						}
-						else if (difference < -45) {
-							tempView.findViewById(R.id.btn_remove).setVisibility(View.GONE);
-							mList.get(pos).setButtonVisible(false);
-						}
-						
-						break;
-				}
-				return true;
-		    }
-		});
 
 		return convertView;
+	}
+	
+	private void getArticleInBackground(final String keyword, final KeywordRowInfo keywordRow, final TextView notifyCount) {
+		new AsyncTask<Void, Void, String>() {
+        	private String resultMessage;
+        	 
+			@Override
+			protected String doInBackground(Void... params) {
+				String URL = "http://blooming-castle-2040.herokuapp.com/getArticle/" + keyword;
+				Log.i("URL", URL);
+				DefaultHttpClient client = new DefaultHttpClient();
+				String result;
+	    		try {
+	    			// Make connection to server.
+	    			Log.i("Connection", "Make connection to server");
+	    			HttpParams connectionParams = client.getParams();
+	    			HttpConnectionParams.setConnectionTimeout(connectionParams, 5000);
+	    			HttpConnectionParams.setSoTimeout(connectionParams, 5000);
+	    			HttpGet httpGet = new HttpGet(URL);
+	    			
+	    			// Get response and parse entity.
+	    			Log.i("Connection", "Get response and parse entity.");
+	    			HttpResponse responsePost = client.execute(httpGet);
+	    			HttpEntity resEntity = responsePost.getEntity(); 			
+	    			
+	    			// Parse result to string.
+	    			Log.i("Connection", "Parse result to string.");
+	    			result = EntityUtils.toString(resEntity);
+	    			result = result.replaceAll("'", "''");
+	    		} catch (Exception e) {
+	    			e.printStackTrace();
+	    			Toast.makeText(mContext, "Some error in server!", Toast.LENGTH_SHORT).show();
+	    			result = "";
+	    		}
+	    		Log.i("Connection", "connection complete");
+	    		
+	    		client.getConnectionManager().shutdown();	// Disconnect.
+	    		return result;
+			}
+
+			@Override
+		    protected void onPostExecute(String result) {
+				if( !result.isEmpty() ) {
+					try {
+						JSONArray articleArray = new JSONArray(result);
+						int arrayLength = articleArray.length();
+						
+						mHelper = new DBHelper(mContext);
+						SQLiteDatabase db = mHelper.getWritableDatabase();
+						for(int i = 0; i < arrayLength; i++) {
+							Log.i("Connection", i + "th JSONObject");
+							JSONObject articleObject = articleArray.getJSONObject(i);
+							String title = articleObject.getString("Title");
+							Log.i("Connection", title);
+							String link = articleObject.getString("Link");
+							String date = articleObject.getString("Date");
+							String news = articleObject.getString("News");
+							String content = articleObject.getString("Head");
+							String query = "INSERT INTO ARTICLES(KEYWORD, TITLE, NEWS, DATE, CONTENT, LINK) VALUES('"
+										 + keyword + "', '" + title + "', '" + news + "', '" + date + "', '" + content + "', '" + link + "');";
+							db.execSQL(query);
+							
+						}
+						
+						String thisTime = getThisTime();
+						String query = "UPDATE KEYWORDS SET LASTUPDATE = '" + thisTime + "' WHERE KEYWORD = '" + keyword + "';";
+						db.execSQL(query);
+						
+						mHelper.close();
+						
+						// Count new article and set data into view.
+						keywordRow.setLastUpdate(thisTime);
+						keywordRow.setNotifyNumber(arrayLength);
+						notifyCount.setText(String.valueOf(arrayLength));
+						notifyDataSetChanged();
+						
+						resultMessage = "Article loading complete!";
+					} catch (JSONException e) {
+						e.printStackTrace();
+						resultMessage = "Error in article loading - problem in JSONArray?";
+					}
+				}
+				else {
+					resultMessage = "Error in receiving articles!";
+				}
+				Toast.makeText(mContext, resultMessage, Toast.LENGTH_SHORT).show();
+			}
+        }.execute(null, null, null);
+    }
+	
+	private void deleteKeywordBackground(final String newKeyword) {
+		SharedPreferences appPref = mContext.getSharedPreferences("appPref", 0);
+		final String regid = appPref.getString("gcmToken", "");
+		if(regid.isEmpty()) {
+			return;
+		}
+		
+    	new AsyncTask<Void, Void, String>() {
+			@Override
+			protected String doInBackground(Void... params) {
+				String URL = "http://blooming-castle-2040.herokuapp.com/deleteId/" + regid + "/" + newKeyword;
+				DefaultHttpClient client = new DefaultHttpClient();
+	    		try {
+	    
+	    			// Make connection to server.
+	    			HttpParams connectionParams = client.getParams();
+	    			HttpConnectionParams.setConnectionTimeout(connectionParams, 5000);
+	    			HttpConnectionParams.setSoTimeout(connectionParams, 5000);
+	    			HttpGet httpGet = new HttpGet(URL);
+	    			
+	    			// Get response and parse entity.
+	    			HttpResponse responsePost = client.execute(httpGet);
+	    			HttpEntity resEntity = responsePost.getEntity();
+	    			
+	    			// Parse result to string.
+	    			String result = EntityUtils.toString(resEntity);
+	    			client.getConnectionManager().shutdown();
+	    			return result;
+	    			
+	    		} catch (Exception e) {
+	    			e.printStackTrace();
+	    			client.getConnectionManager().shutdown();	// Disconnect.
+	    			return "";
+	    		}
+			}
+    		
+    	}.execute(null, null, null);
+	}
+	
+	private String getThisTime() {
+		Date from = new Date();
+		SimpleDateFormat transFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		String to = transFormat.format(from);
+		return to;
 	}
 }

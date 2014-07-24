@@ -15,7 +15,7 @@ public class DBHelper extends SQLiteOpenHelper {
 		String query = "CREATE TABLE KEYWORDS ( \r" 
 					 + "KEYWORD CHAR(128) PRIMARY KEY, \r"
 					 + "LASTUPDATE CHAR(64) DEFAULT 'Not updated yet', \r"
-					 + "LASTVIEW CHAR(64) DEFAULT 'Not updated yet');"; 
+					 + "NOTIFYNUMBER INTEGER DEFAULT 0);"; 
 		/* String query = "CREATE TABLE KEYWORDS ( \r" 
 					 + "ID INTEGER PRIMARY KEY AUTOINCREMENT, \r"
 					 + "KEYWORD CHAR(128) UNIQUE NOT NULL, \r"

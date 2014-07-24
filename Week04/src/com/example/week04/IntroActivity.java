@@ -79,7 +79,7 @@ public class IntroActivity extends Activity {
 				@Override
 				public void onClick(View v) {
 					EditText editText = (EditText) findViewById(R.id.intro_first_keyword);
-					inputText = editText.getText().toString();
+					inputText = editText.getText().toString().trim();
 					if(inputText.compareTo("") == 0) {
 						Toast.makeText(IntroActivity.this, "Give keyword for HummingBird, please!", Toast.LENGTH_SHORT).show();
 					}
@@ -282,7 +282,7 @@ public class IntroActivity extends Activity {
     	new AsyncTask<Void, Void, String>() {
 			@Override
 			protected String doInBackground(Void... params) {
-				String URL = "http://bit.sparcs.org:3000/update/" + regid + "/" + inputText;
+				String URL = "http://blooming-castle-2040.herokuapp.com/addId/" + regid + "/" + inputText;
 				DefaultHttpClient client = new DefaultHttpClient();
 	    		try {
 	    

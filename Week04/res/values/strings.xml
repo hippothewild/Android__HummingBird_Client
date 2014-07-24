@@ -2,6 +2,7 @@
 <resources>
 
     <string name="app_name">Hummingbird</string>
+    <string name="app_icontitle">H-Bird</string>
     
 	<string name="intro_slide1_1">Don\'t waste your time\nmonitoring for the articles.</string>
 	<string name="intro_slide_icon">icon</string>
