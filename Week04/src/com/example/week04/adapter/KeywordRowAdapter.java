@@ -1,5 +1,6 @@
 package com.example.week04.adapter;
 
+import android.database.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -229,7 +230,7 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
 					try {
 						JSONArray articleArray = new JSONArray(result);
 						int arrayLength = articleArray.length();
-						
+						int updatedRow = 0;
 						mHelper = new DBHelper(mContext);
 						SQLiteDatabase db = mHelper.getWritableDatabase();
 						for(int i = 0; i < arrayLength; i++) {
@@ -243,8 +244,14 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
 							String content = articleObject.getString("Head");
 							String query = "INSERT INTO ARTICLES(KEYWORD, TITLE, NEWS, DATE, CONTENT, LINK) VALUES('"
 										 + keyword + "', '" + title + "', '" + news + "', '" + date + "', '" + content + "', '" + link + "');";
-							db.execSQL(query);
-							
+							try {
+								updatedRow++;
+								db.execSQL(query);
+							}
+							catch(SQLException e) {
+								updatedRow--;
+								Log.i("SQL inserting", "SQL exception : duplicate row?");
+							}
 						}
 						
 						String thisTime = getThisTime();
@@ -255,11 +262,16 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
 						
 						// Count new article and set data into view.
 						keywordRow.setLastUpdate(thisTime);
-						keywordRow.setNotifyNumber(arrayLength);
+						keywordRow.setNotifyNumber(updatedRow);
 						notifyCount.setText(String.valueOf(arrayLength));
 						notifyDataSetChanged();
 						
-						resultMessage = "Article loading complete!";
+						if(updatedRow > 0) {
+							resultMessage = "Article loading complete!";
+						}
+						else {
+							resultMessage = "Loading complete - No fresh news.";
+						}
 					} catch (JSONException e) {
 						e.printStackTrace();
 						resultMessage = "Error in article loading - problem in JSONArray?";

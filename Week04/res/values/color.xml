@@ -9,6 +9,7 @@
 	<color name="skyblue">#69b0c7</color>
 	
 	<!-- Basic colors. -->
+	<color name="white">#FFFFFF</color>
 	<color name="ashgray">#BBBBBB</color>
 	<color name="transparent">#00ffffff</color>
 </resources>

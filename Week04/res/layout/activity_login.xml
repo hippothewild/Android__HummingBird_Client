@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="fill_parent"
+  android:layout_height="fill_parent"
+  android:fillViewport="true">
+  <RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent">
+ 
+        <!-- Header Starts -->
+  	    <LinearLayout
+  	        android:id="@+id/header"
+		    android:layout_width="fill_parent"
+		    android:layout_height="wrap_content"
+		   	android:gravity="center"
+		    android:paddingLeft="25dp"
+		    android:paddingRight="25dp">
+			<ImageView
+			    android:contentDescription="@string/app_name"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:src="@drawable/hummingbird_banner"
+			    android:paddingTop="10dip"/>
+		</LinearLayout>
+        <!-- Header Ends -->
+ 
+        <!-- Login Form -->
+        <LinearLayout
+		   	android:layout_below="@+id/header"
+        	android:orientation="vertical"
+          	android:layout_width="match_parent"
+          	android:layout_height="wrap_content"
+          	android:paddingLeft="10dip"
+          	android:paddingRight="10dip">
+          <!--  Email Label -->
+          <TextView
+              android:layout_width="fill_parent"
+              android:layout_height="wrap_content"
+              android:paddingTop="10dp"
+              android:textColor="@color/ashgray"
+              android:text="Email"/>
+          <EditText
+              android:id="@+id/login_email"
+              android:layout_width="fill_parent"
+              android:layout_height="wrap_content"   
+              android:layout_marginTop="5dip"
+              android:layout_marginBottom="20dip"
+              android:hint=""
+              android:textColor="@color/ashgray"
+              android:singleLine="true"/>
+          <!--  Password Label -->
+          <TextView
+              android:layout_width="fill_parent"
+              android:layout_height="wrap_content"
+              android:textColor="@color/ashgray"
+              android:text="Password"/>
+          <EditText
+			  android:id="@+id/login_password"           
+              android:layout_width="fill_parent"
+              android:layout_height="wrap_content"
+              android:layout_marginTop="5dip"
+              android:layout_marginBottom="15dip"
+              android:singleLine="true"
+              android:inputType="textPassword"
+              android:textColor="@color/ashgray" />
+          <!-- Login button -->
+		  <CheckBox
+		      android:id="@+id/autoLogin"
+		      android:layout_width="match_parent"
+			  android:layout_height="wrap_content"
+		      android:text="Login automatically"
+		      android:textColor="@color/ashgray"/>
+		  <Button
+		      android:id="@+id/btnLogin"
+			  android:layout_width="match_parent"
+			  android:layout_height="wrap_content"
+			  android:layout_marginTop="10dip"
+			  android:text="Confirm"
+			  android:background="#55ffffff"
+          	  android:textColor="@color/ashgray"/>
+          
+          <!-- Link to Registration Screen -->
+          <TextView android:id="@+id/link_to_register"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="40dip"
+                android:layout_marginBottom="40dip"
+                android:text="New in Hummingbird? Register here!"
+                android:gravity="center"
+                android:textSize="15sp"
+                android:textColor="@color/yolk"/>
+		</LinearLayout>
+        <!-- Login Form Ends -->
+ 
+  </RelativeLayout>
+</ScrollView>

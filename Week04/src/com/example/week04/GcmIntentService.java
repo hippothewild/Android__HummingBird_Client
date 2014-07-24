@@ -39,6 +39,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -156,6 +157,7 @@ public class GcmIntentService extends IntentService {
 					try {
 						JSONArray articleArray = new JSONArray(result);
 						int arrayLength = articleArray.length();
+						int updatedRow = 0;
 						
 						DBHelper mHelper = new DBHelper(getApplicationContext());
 						SQLiteDatabase db = mHelper.getWritableDatabase();
@@ -168,7 +170,15 @@ public class GcmIntentService extends IntentService {
 							String content = articleObject.getString("Head");
 							String query = "INSERT INTO ARTICLES(KEYWORD, TITLE, NEWS, DATE, CONTENT, LINK) VALUES('"
 										 + keyword + "', '" + title + "', '" + news + "', '" + date + "', '" + content + "', '" + link + "');";
-							db.execSQL(query);
+							try {
+								updatedRow++;
+								db.execSQL(query);
+							}
+							catch(SQLException e) {
+								updatedRow--;
+								e.printStackTrace();
+								Log.i("SQL inserting", "SQL exception : duplicate row?");
+							}
 							
 						}
 						
@@ -178,7 +188,12 @@ public class GcmIntentService extends IntentService {
 						
 						mHelper.close();
 						
-						resultMessage = "Article loading complete!";
+						if(updatedRow > 0) {
+							resultMessage = "Article loading complete!";
+						}
+						else {
+							resultMessage = "Loading complete - No fresh news.";
+						}
 					} catch (JSONException e) {
 						e.printStackTrace();
 						resultMessage = "Error in article loading - problem in JSONArray?";

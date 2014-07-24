@@ -30,7 +30,7 @@ public class DBHelper extends SQLiteOpenHelper {
 			  + "NEWS CHAR(64) NOT NULL, \r"
 			  + "DATE CHAR(64) NOT NULL, \r"
 			  + "CONTENT TEXT NOT NULL, \r"
-			  + "LINK TEXT NOT NULL);";
+			  + "LINK TEXT UNIQUE NOT NULL);";
 		/* query = "CREATE TABLE ARTICLES ( \r" 
 			  + "ID INTEGER NOT NULL REFERENCES KEYWORDS(ID), \r"
 			  + "CONTENT TEXT NOT NULL, \r"
