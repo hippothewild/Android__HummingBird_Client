@@ -8,8 +8,10 @@
     <ListView
         android:id="@+id/keyword_list"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content"/>
-
+        android:layout_height="wrap_content"
+        android:divider="@color/ashgray"
+        android:dividerHeight="1dp"/>
+    
     <TextView
         android:id="@+id/keyword_new"
         android:layout_width="fill_parent"

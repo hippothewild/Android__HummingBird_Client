@@ -16,6 +16,22 @@
 
 package com.example.week04;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.example.week04.info.DBHelper;
+import com.example.week04.info.Settings;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 
 import android.app.IntentService;
@@ -23,8 +39,9 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
@@ -65,22 +82,12 @@ public class GcmIntentService extends IntentService {
                 sendNotification("Deleted messages on server: " + extras.toString());
             // If it's a regular GCM message, do some work.
             } else if (GoogleCloudMessaging.MESSAGE_TYPE_MESSAGE.equals(messageType)) {
-                // TODO :: check wifi-stat and receive articles from server.
-            	// delete below for-loop.
-            	/* to-delete start */
-                for (int i = 0; i < 5; i++) {
-                    Log.i(TAG, "Working... " + (i + 1)
-                            + "/5 @ " + SystemClock.elapsedRealtime());
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException e) {
-                    }
-                }
-                /* to-delete end */
+                // TODO :: check wifi-stat                
+                // Receive articles, and post notification of received message.
+                String keyword = extras.getString("new data");
+                getArticleInBackground(keyword);                
                 
-                Log.i(TAG, "Completed work @ " + SystemClock.elapsedRealtime());
-                // Post notification of received message.
-                sendNotification("Received: " + extras.toString());
+                sendNotification("'" + keyword + "'에 대한 새로운 소식이 있습니다!");
                 Log.i(TAG, "Received: " + extras.toString());
             }
         }
@@ -109,4 +116,87 @@ public class GcmIntentService extends IntentService {
         mBuilder.setContentIntent(contentIntent);
         mNotificationManager.notify(NOTIFICATION_ID, mBuilder.build());
     }
+    
+	private void getArticleInBackground(final String keyword) {
+		new AsyncTask<Void, Void, Void>() {
+        	private String resultMessage = "";
+        	 
+			@Override
+			protected Void doInBackground(Void... params) {
+				String serverURL = new Settings().getServerURL();
+				String URL = serverURL + "getArticle/" + keyword;
+				DefaultHttpClient client = new DefaultHttpClient();
+				String result;
+	    		try {
+	    			// Make connection to server.
+	    			Log.i("Connection", "Make connection to server");
+	    			HttpParams connectionParams = client.getParams();
+	    			HttpConnectionParams.setConnectionTimeout(connectionParams, 5000);
+	    			HttpConnectionParams.setSoTimeout(connectionParams, 5000);
+	    			HttpGet httpGet = new HttpGet(URL);
+	    			
+	    			// Get response and parse entity.
+	    			Log.i("Connection", "Get response and parse entity.");
+	    			HttpResponse responsePost = client.execute(httpGet);
+	    			HttpEntity resEntity = responsePost.getEntity(); 			
+	    			
+	    			// Parse result to string.
+	    			Log.i("Connection", "Parse result to string.");
+	    			result = EntityUtils.toString(resEntity);
+	    			result = result.replaceAll("'", "''");
+	    		} catch (Exception e) {
+	    			e.printStackTrace();
+	    			Log.i("Connection", "Some error in server!");
+	    			result = "";
+	    		}
+	    		
+	    		client.getConnectionManager().shutdown();	// Disconnect.
+	    		
+	    		if( !result.isEmpty() ) {
+					try {
+						JSONArray articleArray = new JSONArray(result);
+						int arrayLength = articleArray.length();
+						
+						DBHelper mHelper = new DBHelper(getApplicationContext());
+						SQLiteDatabase db = mHelper.getWritableDatabase();
+						for(int i = 0; i < arrayLength; i++) {
+							JSONObject articleObject = articleArray.getJSONObject(i);
+							String title = articleObject.getString("Title");
+							String link = articleObject.getString("Link");
+							String date = articleObject.getString("Date");
+							String news = articleObject.getString("News");
+							String content = articleObject.getString("Head");
+							String query = "INSERT INTO ARTICLES(KEYWORD, TITLE, NEWS, DATE, CONTENT, LINK) VALUES('"
+										 + keyword + "', '" + title + "', '" + news + "', '" + date + "', '" + content + "', '" + link + "');";
+							db.execSQL(query);
+							
+						}
+						
+						String thisTime = getThisTime();
+						String query = "UPDATE KEYWORDS SET LASTUPDATE = '" + thisTime + "' WHERE KEYWORD = '" + keyword + "';";
+						db.execSQL(query);
+						
+						mHelper.close();
+						
+						resultMessage = "Article loading complete!";
+					} catch (JSONException e) {
+						e.printStackTrace();
+						resultMessage = "Error in article loading - problem in JSONArray?";
+					}
+				}
+				else {
+					resultMessage = "Error in receiving articles!";
+				}
+	    		Log.i("JSON parsing", resultMessage);
+				return null;
+			}
+        }.execute(null, null, null);
+    }
+	
+	private String getThisTime() {
+		Date from = new Date();
+		SimpleDateFormat transFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		String to = transFormat.format(from);
+		return to;
+	}
 }

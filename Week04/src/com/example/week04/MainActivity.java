@@ -27,11 +27,15 @@ import android.widget.TextView;
 import com.example.week04.adapter.KeywordRowAdapter;
 import com.example.week04.info.KeywordRowInfo;
 import com.example.week04.info.DBHelper;
+import com.example.week04.info.Settings;
 
 import android.util.Log;
 
 public class MainActivity extends Activity {
 
+	// Server URL.
+	private String serverURL;
+	
 	private KeywordRowAdapter rowAdapter;
 	private ArrayList<KeywordRowInfo> keywordList;
 	private ListView keywordListView;
@@ -47,6 +51,9 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
+		// Set debug or mainrun mode.
+		serverURL = new Settings().getServerURL();
+		
 		// Set listview of keywords.
 		keywordListView = (ListView)findViewById(R.id.keyword_list);
 		keywordList = new ArrayList<KeywordRowInfo>();
@@ -59,6 +66,9 @@ public class MainActivity extends Activity {
 		// Set onclicklistener for Add button.
 		newKeywordView = (TextView) findViewById(R.id.keyword_new);
 		newKeywordView.setOnClickListener(newItemMaker);
+		
+		// Set GCM to device.
+		
 	}
 	
 	private void setKeywordList()  {
@@ -143,7 +153,7 @@ public class MainActivity extends Activity {
     	new AsyncTask<Void, Void, String>() {
 			@Override
 			protected String doInBackground(Void... params) {
-				String URL = "http://blooming-castle-2040.herokuapp.com/addId/" + regid + "/" + newKeyword;
+				String URL = serverURL + "addId/" + regid + "/" + newKeyword;
 				DefaultHttpClient client = new DefaultHttpClient();
 	    		try {
 	    

@@ -13,7 +13,7 @@ import android.os.Bundle;
 import android.widget.ListView;
 
 public class ArticleActivity extends Activity {
-
+	
 	private ArticleRowAdapter rowAdapter;
 	private ArrayList<ArticleRowInfo> articleList;
 	private ListView articleListView;

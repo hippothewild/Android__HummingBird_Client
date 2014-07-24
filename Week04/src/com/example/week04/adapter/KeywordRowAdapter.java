@@ -36,6 +36,7 @@ import com.example.week04.ArticleActivity;
 import com.example.week04.R;
 import com.example.week04.info.DBHelper;
 import com.example.week04.info.KeywordRowInfo;
+import com.example.week04.info.Settings;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -43,6 +44,10 @@ import android.util.Log;
 
 public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
 
+	// Server URL.
+	private String serverURL;
+	
+	// Resources for building adapter.
 	private Context mContext;
 	private int mResource;
 	private ArrayList<KeywordRowInfo> mList;
@@ -58,6 +63,7 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
 		this.mResource = resource;
 		this.mList = objects;
 		this.mInflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		this.serverURL = new Settings().getServerURL();
 	}
 	
 	@Override
@@ -90,7 +96,7 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
 							mList.get(pos).setButtonVisible(false);
 						}
 						else if (difference < 5 && difference > -5)	 {
-							// click.
+							Log.i("KeywordRowAdapter", "Click");
 							Intent intent = new Intent(mContext, ArticleActivity.class);
 							Bundle b = new Bundle();
 							b.putString("keyword", keywordRow.getKeyword());
@@ -185,7 +191,7 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
         	 
 			@Override
 			protected String doInBackground(Void... params) {
-				String URL = "http://blooming-castle-2040.herokuapp.com/getArticle/" + keyword;
+				String URL = serverURL + "getArticle/" + keyword;
 				Log.i("URL", URL);
 				DefaultHttpClient client = new DefaultHttpClient();
 				String result;
@@ -277,7 +283,7 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
     	new AsyncTask<Void, Void, String>() {
 			@Override
 			protected String doInBackground(Void... params) {
-				String URL = "http://blooming-castle-2040.herokuapp.com/deleteId/" + regid + "/" + newKeyword;
+				String URL = serverURL + "deleteId/" + regid + "/" + newKeyword;
 				DefaultHttpClient client = new DefaultHttpClient();
 	    		try {
 	    

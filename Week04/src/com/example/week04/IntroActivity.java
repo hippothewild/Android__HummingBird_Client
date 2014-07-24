@@ -32,11 +32,15 @@ import android.widget.Toast;
 import android.widget.ViewFlipper;
 
 import com.example.week04.info.DBHelper;
+import com.example.week04.info.Settings;
 
 import android.util.Log;
 
 public class IntroActivity extends Activity {
 
+	// Server URL.
+	private String serverURL;
+	
 	// Project number of API Console for GCM pushing.
 	String SENDER_ID = "402485531539";
 	GoogleCloudMessaging gcm;
@@ -52,6 +56,7 @@ public class IntroActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		mContext = getApplicationContext();
 		inputText = "";
+		serverURL = new Settings().getServerURL();
 		
 		// No title bar at the intro-activity.
 		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -156,11 +161,12 @@ public class IntroActivity extends Activity {
     	// Make first preference of the app.
 		SharedPreferences appPref = getSharedPreferences("appPref", 0);
 		SharedPreferences.Editor edit = appPref.edit();
-		edit.putBoolean("CrawlOnlyInWifi", true);
-		edit.putInt("CrawlIntervalInMinutes", 1440);
-		edit.putInt("DayTimeStart", 7);
-		edit.putInt("DayTimeEnd", 23);
-		edit.putBoolean("NotifyOnlyInDaytime", true);
+		Settings defaultSetting = new Settings();
+		edit.putBoolean("CrawlOnlyInWifi", defaultSetting.getCrawlStatus());
+		edit.putInt("CrawlIntervalInMinutes", defaultSetting.getCrawlInterval());
+		edit.putInt("DayTimeStart", defaultSetting.getDayTimeStart());
+		edit.putInt("DayTimeEnd", defaultSetting.getDayTimeEnd());
+		edit.putBoolean("NotifyOnlyInDaytime", defaultSetting.getNotifyType());
 		edit.putBoolean("HasPreference", true);
 		edit.commit();
 		
@@ -282,7 +288,7 @@ public class IntroActivity extends Activity {
     	new AsyncTask<Void, Void, String>() {
 			@Override
 			protected String doInBackground(Void... params) {
-				String URL = "http://blooming-castle-2040.herokuapp.com/addId/" + regid + "/" + inputText;
+				String URL = serverURL + "addId/" + regid + "/" + inputText;
 				DefaultHttpClient client = new DefaultHttpClient();
 	    		try {
 	    

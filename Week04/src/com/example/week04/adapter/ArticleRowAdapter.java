@@ -6,7 +6,11 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
+import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -16,6 +20,7 @@ import android.view.View.OnTouchListener;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+import com.example.week04.ArticleActivity;
 import com.example.week04.R;
 import com.example.week04.info.DBHelper;
 import com.example.week04.info.ArticleRowInfo;
@@ -41,7 +46,7 @@ public class ArticleRowAdapter extends ArrayAdapter<ArticleRowInfo> {
 	
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent){
-		ArticleRowInfo articleRow = mList.get(position);
+		final ArticleRowInfo articleRow = mList.get(position);
 
 		if(convertView == null){
 			convertView = mInflater.inflate(mResource, null);
@@ -49,8 +54,9 @@ public class ArticleRowAdapter extends ArrayAdapter<ArticleRowInfo> {
 		
 		final View tempView = convertView;
 		final int pos = position;
-
+		
 		if(articleRow != null){
+			Log.i("ArticleRowAdapter", "row loading...");
 			TextView viewTitle = (TextView) convertView.findViewById(R.id.article_title);
 			TextView viewTime = (TextView) convertView.findViewById(R.id.article_time);
 			TextView viewContent = (TextView) convertView.findViewById(R.id.article_content);
@@ -106,30 +112,12 @@ public class ArticleRowAdapter extends ArrayAdapter<ArticleRowInfo> {
 			});
 		}
 		
-		convertView.setOnTouchListener(new OnTouchListener() {
-			@SuppressLint("ClickableViewAccessibility")
+		convertView.setOnClickListener(new OnClickListener() {
 			@Override
-			public boolean onTouch(final View v, MotionEvent event) {
-				switch( event.getAction() ) {
-					case MotionEvent.ACTION_DOWN :
-						action_down_x = (int) event.getX();
-						break;
-					case MotionEvent.ACTION_UP :
-						final int difference = action_down_x - (int)event.getX();
-
-						if (difference > 45) {
-							tempView.findViewById(R.id.btn_remove).setVisibility(View.VISIBLE);
-							mList.get(pos).setButtonVisible(true);
-						}
-						else if (difference < -45) {
-							tempView.findViewById(R.id.btn_remove).setVisibility(View.GONE);
-							mList.get(pos).setButtonVisible(false);
-						}
-						
-						break;
-				}
-				return true;
-		    }
+			public void onClick(View v) {
+				Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(articleRow.getLink()));
+				mContext.startActivity(intent);
+			}
 		});
 
 		return convertView;
