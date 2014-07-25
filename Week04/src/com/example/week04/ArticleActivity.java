@@ -45,7 +45,7 @@ public class ArticleActivity extends Activity {
 		
 		mHelper = new DBHelper(this);
 		SQLiteDatabase db = mHelper.getReadableDatabase();
-		Cursor cursor = db.rawQuery("SELECT ID, TITLE, NEWS, DATE, CONTENT, LINK FROM ARTICLES WHERE KEYWORD = '" + keyword + "';", null);
+		Cursor cursor = db.rawQuery("SELECT ID, TITLE, NEWS, DATE, CONTENT, LINK FROM ARTICLES WHERE KEYWORD = '" + keyword + "' ORDER BY ID DESC;", null);
 		
 		while(cursor.moveToNext()) {
 			ArticleRowInfo newRow = new ArticleRowInfo();

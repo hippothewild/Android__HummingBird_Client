@@ -88,7 +88,7 @@ public class GcmIntentService extends IntentService {
                 String keyword = extras.getString("new data");
                 getArticleInBackground(keyword);                
                 
-                sendNotification("'" + keyword + "'에 대한 새로운 소식이 있습니다!");
+                
                 Log.i(TAG, "Received: " + extras.toString());
             }
         }
@@ -144,7 +144,7 @@ public class GcmIntentService extends IntentService {
 	    			// Parse result to string.
 	    			Log.i("Connection", "Parse result to string.");
 	    			result = EntityUtils.toString(resEntity);
-	    			result = result.replaceAll("'", "''");
+	    			result = result.replaceAll("'|&lt;|&quot;|&gt;", "''");
 	    		} catch (Exception e) {
 	    			e.printStackTrace();
 	    			Log.i("Connection", "Some error in server!");
@@ -176,8 +176,7 @@ public class GcmIntentService extends IntentService {
 							}
 							catch(SQLException e) {
 								updatedRow--;
-								e.printStackTrace();
-								Log.i("SQL inserting", "SQL exception : duplicate row?");
+								Log.i("SQL inserting", "SQL exception in " + i + "th row : duplicated?");
 							}
 							
 						}
@@ -190,6 +189,7 @@ public class GcmIntentService extends IntentService {
 						
 						if(updatedRow > 0) {
 							resultMessage = "Article loading complete!";
+							sendNotification("'" + keyword + "'에 대한 새로운 소식이 " + updatedRow + "건 있습니다!");
 						}
 						else {
 							resultMessage = "Loading complete - No fresh news.";

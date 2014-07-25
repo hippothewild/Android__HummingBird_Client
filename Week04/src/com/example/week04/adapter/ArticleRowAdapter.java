@@ -2,15 +2,15 @@ package com.example.week04.adapter;
 
 import java.util.ArrayList;
 
-import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
-import android.os.Bundle;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -18,7 +18,9 @@ import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.week04.ArticleActivity;
 import com.example.week04.R;
@@ -34,7 +36,10 @@ public class ArticleRowAdapter extends ArrayAdapter<ArticleRowInfo> {
 	private DBHelper mHelper;
 	
 	// Touch event variables.
-	private int action_down_x = 0;
+	private static final int SCROLL_ACTION_THRESHOLD = 40;
+	private static final int SCROLL_MAX_OFF_PATH = 200;
+    private boolean isScrolling = false;
+    private int scrollDistance = 0;
 	
 	public ArticleRowAdapter(Context context, int resource, ArrayList<ArticleRowInfo> objects) {
 		super(context, resource, objects);
@@ -52,9 +57,6 @@ public class ArticleRowAdapter extends ArrayAdapter<ArticleRowInfo> {
 			convertView = mInflater.inflate(mResource, null);
 		}
 		
-		final View tempView = convertView;
-		final int pos = position;
-		
 		if(articleRow != null){
 			Log.i("ArticleRowAdapter", "row loading...");
 			TextView viewTitle = (TextView) convertView.findViewById(R.id.article_title);
@@ -65,61 +67,96 @@ public class ArticleRowAdapter extends ArrayAdapter<ArticleRowInfo> {
 			viewTitle.setText(articleRow.getTitle());
 			viewTime.setText(articleRow.getNews() + ", " + articleRow.getDate());
 			viewContent.setText(articleRow.getContent());		
-			
-			// Set remove button to remove items.
-			TextView buttonRemove = (TextView) convertView.findViewById(R.id.article_btn_remove);
-			if(articleRow.isButtonVisible()) {
-				buttonRemove.setVisibility(View.VISIBLE);
-			}
-			else {
-				buttonRemove.setVisibility(View.GONE);
-			}
-			
-			// Set on-click listener to button item.
-			buttonRemove.setOnClickListener(new OnClickListener() {
-				@Override
-				public void onClick(final View v) {
-					AlertDialog.Builder alert = new AlertDialog.Builder(mContext);
-
-					alert.setTitle("Alert!");
-					alert.setMessage("Really delete this article?");
-
-					alert.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
-						public void onClick(DialogInterface dialog, int whichButton) {
-							// Remove item from DB.
-							int deleteId = mList.get(pos).getId();
-							mHelper = new DBHelper(mContext);
-							SQLiteDatabase db = mHelper.getWritableDatabase();
-							String query = "DELETE FROM ARTICLES WHERE ID=" + deleteId + ";";
-							db.execSQL(query);
-							mHelper.close();
-							
-							// Remove item from Listview.
-							mList.get(pos).setButtonVisible(false);
-							mList.remove(pos);
-							notifyDataSetChanged();
-						}
-					});
-					
-					alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-						public void onClick(DialogInterface dialog, int whichButton) {
-							tempView.findViewById(R.id.btn_remove).setVisibility(View.GONE);
-						}
-					});
-					
-					alert.show(); 
-				}
-			});
 		}
 		
-		convertView.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(articleRow.getLink()));
-				mContext.startActivity(intent);
+		// Set gesture listener on each row(swipe, click)
+		View articleHolder = convertView.findViewById(R.id.article_holder);
+		final ImageView scrapImage = (ImageView) convertView.findViewById(R.id.article_btn_scrap);
+		final ImageView scrapDelete = (ImageView) convertView.findViewById(R.id.article_btn_remove);
+		final GestureDetector gestureDetector = new GestureDetector(mContext, new MyGestureDetector(scrapImage, scrapDelete));
+	    View.OnTouchListener gestureListener = new View.OnTouchListener() {
+            public boolean onTouch(View v, MotionEvent event) {
+            	if (gestureDetector.onTouchEvent(event)) {
+                    return true;
+                }
+				if (event.getAction() == MotionEvent.ACTION_UP) {
+					if (isScrolling) {
+						Log.i("OnTouchListener", "onTouch ACTION_UP");
+						if (scrollDistance < -SCROLL_ACTION_THRESHOLD) {
+							Toast.makeText(mContext, "scrap view!",
+									Toast.LENGTH_SHORT).show();
+							scrapImage.setVisibility(View.GONE);
+							scrapDelete.setVisibility(View.GONE);
+						} else if (scrollDistance > SCROLL_ACTION_THRESHOLD) {
+							Toast.makeText(mContext, "delete view!",
+									Toast.LENGTH_SHORT).show();
+							scrapImage.setVisibility(View.GONE);
+							scrapDelete.setVisibility(View.GONE);
+						} else {
+							Toast.makeText(mContext, "Nothing happens!",
+									Toast.LENGTH_SHORT).show();
+						}
+						isScrolling = false;
+						scrollDistance = 0;
+					} else {
+						// Touch event.
+						Intent intent = new Intent(Intent.ACTION_VIEW,
+								Uri.parse(articleRow.getLink()));
+						mContext.startActivity(intent);
+						isScrolling = false;
+						scrollDistance = 0;
+					}
+				}
+				return false;
 			}
-		});
-
+        };
+        articleHolder.setOnTouchListener(gestureListener);
+		
 		return convertView;
 	}
+	
+	class MyGestureDetector extends SimpleOnGestureListener {
+		ImageView myScrapView;
+		ImageView myDeleteView;
+		
+		public MyGestureDetector(ImageView scrapView, ImageView deleteView)
+		{
+			myScrapView = scrapView;
+			myDeleteView = deleteView;
+		}
+		
+        @Override
+        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+            try {
+            	isScrolling = true;
+                scrollDistance = (int) (e1.getX() - e2.getX());
+            	if (Math.abs(e1.getY() - e2.getY()) > SCROLL_MAX_OFF_PATH) {
+                    return true;
+            	}
+            	
+            	if(scrollDistance > SCROLL_ACTION_THRESHOLD) {
+            		myScrapView.setVisibility(View.VISIBLE);
+            		myDeleteView.setVisibility(View.GONE);
+            	}
+            	else if(scrollDistance < -SCROLL_ACTION_THRESHOLD) {
+            		myScrapView.setVisibility(View.GONE);
+            		myDeleteView.setVisibility(View.VISIBLE);
+            	}
+            	else {
+            		myScrapView.setVisibility(View.GONE);
+            		myDeleteView.setVisibility(View.GONE);
+            	}
+      
+            } catch (Exception e) {
+                // nothing
+            }
+            return false;
+        }
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+              return true;
+        }
+    }
+
 }

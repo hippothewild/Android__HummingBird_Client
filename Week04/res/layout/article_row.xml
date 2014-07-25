@@ -3,25 +3,39 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@color/charcoal"    
-    android:orientation="vertical"
-    android:padding="5dp">
+    android:orientation="horizontal"
+    android:paddingLeft="5dp"
+    android:paddingRight="7.5dp"
+    android:paddingTop="2.5dp"
+    android:paddingBottom="2.5dp">
 	<LinearLayout
+	    android:id="@+id/article_holder"
 	    android:layout_width="match_parent"
 	    android:layout_height="wrap_content"
 	    android:background="@color/charcoal_uptone"
-	    android:orientation="horizontal">
+	    android:orientation="horizontal"
+	    android:longClickable="true">
+	    
+	    <ImageView
+		    android:id="@+id/article_btn_scrap"
+		    android:layout_width="0dp"
+		    android:layout_height="match_parent"
+		    android:layout_weight="1"
+		    android:padding="5dp"
+		    android:src="@drawable/scrap"
+		    android:visibility="gone"/>	
 	
 		<LinearLayout
 		    android:layout_width="0dp"
 		    android:layout_height="match_parent"
 		    android:layout_margin="5dp"
-		    android:layout_weight="7"
+		    android:layout_weight="8"
 		    android:gravity="center_vertical"
 		    android:orientation="vertical" >
 	
 			<TextView
 			    android:id="@+id/article_title"
-			    android:lines="2"
+			    android:maxLines="2"
 			    android:layout_width="match_parent"
 			    android:layout_height="wrap_content"
 			    android:gravity="center_vertical"
@@ -34,7 +48,7 @@
 			    android:layout_width="match_parent"
 			    android:layout_height="wrap_content"
 			    android:gravity="center_vertical"
-			    android:paddingTop="3dp"
+			    android:paddingTop="5dp"
 			    android:text="TIME"
 			    android:textColor="@color/ashgray"
 			    android:textSize="10sp" />
@@ -44,20 +58,19 @@
 			    android:layout_height="wrap_content"
 			    android:gravity="center_vertical"
 			    android:text="CONTENT"
-			    android:paddingTop="10dp"
+			    android:paddingTop="5dp"
 			    android:textColor="@color/ashgray"
 			    android:textSize="12sp"/>
 		</LinearLayout>
 	
-		<TextView
+		<ImageView
 		    android:id="@+id/article_btn_remove"
-		    style="@style/ButtonTheme"
 		    android:layout_width="0dp"
 		    android:layout_height="match_parent"
-		    android:layout_weight="2"
-		    android:gravity="center_vertical|center_horizontal"
-		    android:text="X"
-		    android:textSize="25sp"
-		    android:visibility="gone" />	
+		    android:layout_weight="1"
+		    android:padding="5dp"
+		    android:src="@drawable/delete"
+		    android:visibility="gone"/>	
+		    
 	</LinearLayout>
 </LinearLayout>

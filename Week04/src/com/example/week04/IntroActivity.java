@@ -94,7 +94,8 @@ public class IntroActivity extends Activity {
 							regid = getRegistrationId(mContext);
 
 				            if (regid.isEmpty()) {
-				                registerInBackground();
+				            	Log.i("Google Play APK Checking", "No valid GCM id. login again.");
+					            finish();
 				            }
 				        } else {
 				            Log.i("Google Play APK Checking", "No valid Google Play Services APK found.");
@@ -102,6 +103,7 @@ public class IntroActivity extends Activity {
 				        }
 						
 						// Make up app's first preference for user.
+						registerKeyword(regid, inputText);
 						appMakeUp(inputText);
 						
 						// Load main activity.
@@ -178,7 +180,7 @@ public class IntroActivity extends Activity {
 		mHelper.close();
     }
     
-    /**
+	 /**
      * Check the device to make sure it has the Google Play Services APK. If
      * it doesn't, display a dialog that allows users to download the APK from
      * the Google Play Store or enable it in the device's system settings.
@@ -231,64 +233,17 @@ public class IntroActivity extends Activity {
             throw new RuntimeException("Could not get package name: " + e);
         }
     }
-    
-    /**
-     * Registers the application with GCM servers asynchronously.
-     * Stores the registration ID and the app versionCode in the application's
-     * shared preferences.
-     */
-    private void registerInBackground() {
-        new AsyncTask<Void, Void, String>() {
-            @Override
-            protected String doInBackground(Void... params) {
-                String msg = "";
-                try {
-                    if (gcm == null) {
-                        gcm = GoogleCloudMessaging.getInstance(mContext);
-                    }
-                    regid = gcm.register(SENDER_ID);
-                    msg = "Device registered, registration ID=" + regid;
 
-                    // You should send the registration ID to your server over HTTP, so it
-                    // can use GCM/HTTP or CCS to send messages to your app.
-                    sendRegistrationIdToBackend();
-
-                    // For this demo: we don't need to send it because the device will send
-                    // upstream messages to a server that echo back the message using the
-                    // 'from' address in the message.
-
-                    // Persist the regID - no need to register again.
-                    SharedPreferences appPref = getSharedPreferences("appPref", 0);
-            		SharedPreferences.Editor edit = appPref.edit();
-            		edit.putString("gcmToken", regid);
-            		edit.putInt("appVersion", getAppVersion(mContext));
-            		edit.commit();
-                } catch (IOException ex) {
-                    msg = "Error :" + ex.getMessage();
-                    // If there is an error, don't just keep trying to register.
-                    // Require the user to click a button again, or perform
-                    // exponential back-off.
-                }
-                return msg;
-            }
-
-            @Override
-            protected void onPostExecute(String msg) {
-                Log.i("registering", msg);
-            }
-        }.execute(null, null, null);
-    }
-    
     /**
      * Sends the registration ID to your server over HTTP, so it can use GCM/HTTP or CCS to send
      * messages to your app. Not needed for this demo since the device sends upstream messages
      * to a server that echoes back the message using the 'from' address in the message.
      */
-    private void sendRegistrationIdToBackend() {
+    private void registerKeyword(final String regid, final String keyword) {
     	new AsyncTask<Void, Void, String>() {
 			@Override
 			protected String doInBackground(Void... params) {
-				String URL = serverURL + "addId/" + regid + "/" + inputText;
+				String URL = serverURL + "addId/" + regid + "/" + keyword;
 				DefaultHttpClient client = new DefaultHttpClient();
 	    		try {
 	    

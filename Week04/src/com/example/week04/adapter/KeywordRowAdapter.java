@@ -1,9 +1,11 @@
 package com.example.week04.adapter;
 
 import android.database.SQLException;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -155,7 +157,13 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
 							String keyword = mList.get(pos).getKeyword();
 							
 							// Remove item from backend server.
-							deleteKeywordBackground(keyword);
+							String backGroundResult = deleteKeywordBackground(keyword);
+							if( backGroundResult.equals("done") ) {
+								Toast.makeText(mContext, "Delete complte!", Toast.LENGTH_SHORT);
+							}
+							else {
+								Toast.makeText(mContext, backGroundResult, Toast.LENGTH_SHORT);
+							}
 							
 							// Remove item from DB.
 							mHelper = new DBHelper(mContext);
@@ -212,7 +220,7 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
 	    			// Parse result to string.
 	    			Log.i("Connection", "Parse result to string.");
 	    			result = EntityUtils.toString(resEntity);
-	    			result = result.replaceAll("'", "''");
+	    			result = result.replaceAll("'|&lt;|&quot;|&gt;", "''");
 	    		} catch (Exception e) {
 	    			e.printStackTrace();
 	    			Toast.makeText(mContext, "Some error in server!", Toast.LENGTH_SHORT).show();
@@ -285,43 +293,54 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
         }.execute(null, null, null);
     }
 	
-	private void deleteKeywordBackground(final String newKeyword) {
+	private String deleteKeywordBackground(final String newKeyword) {
 		SharedPreferences appPref = mContext.getSharedPreferences("appPref", 0);
 		final String regid = appPref.getString("gcmToken", "");
+		String result = "";
 		if(regid.isEmpty()) {
-			return;
+			return "failed = unable to get token!";
 		}
 		
-    	new AsyncTask<Void, Void, String>() {
-			@Override
-			protected String doInBackground(Void... params) {
-				String URL = serverURL + "deleteId/" + regid + "/" + newKeyword;
-				DefaultHttpClient client = new DefaultHttpClient();
-	    		try {
-	    
-	    			// Make connection to server.
-	    			HttpParams connectionParams = client.getParams();
-	    			HttpConnectionParams.setConnectionTimeout(connectionParams, 5000);
-	    			HttpConnectionParams.setSoTimeout(connectionParams, 5000);
-	    			HttpGet httpGet = new HttpGet(URL);
-	    			
-	    			// Get response and parse entity.
-	    			HttpResponse responsePost = client.execute(httpGet);
-	    			HttpEntity resEntity = responsePost.getEntity();
-	    			
-	    			// Parse result to string.
-	    			String result = EntityUtils.toString(resEntity);
-	    			client.getConnectionManager().shutdown();
-	    			return result;
-	    			
-	    		} catch (Exception e) {
-	    			e.printStackTrace();
-	    			client.getConnectionManager().shutdown();	// Disconnect.
-	    			return "";
-	    		}
-			}
-    		
-    	}.execute(null, null, null);
+    	try {
+			result = new AsyncTask<Void, Void, String>() {
+				@Override
+				protected String doInBackground(Void... params) {
+					String URL = serverURL + "deleteId/" + regid + "/" + newKeyword;
+					DefaultHttpClient client = new DefaultHttpClient();
+					
+					try {
+			
+						// Make connection to server.
+						HttpParams connectionParams = client.getParams();
+						HttpConnectionParams.setConnectionTimeout(connectionParams, 5000);
+						HttpConnectionParams.setSoTimeout(connectionParams, 5000);
+						HttpGet httpGet = new HttpGet(URL);
+						
+						// Get response and parse entity.
+						HttpResponse responsePost = client.execute(httpGet);
+						HttpEntity resEntity = responsePost.getEntity();
+						
+						// Parse result to string.
+						String getString = EntityUtils.toString(resEntity);
+						client.getConnectionManager().shutdown();
+						return getString;
+						
+					} catch (Exception e) {
+						e.printStackTrace();
+						client.getConnectionManager().shutdown();	// Disconnect.
+						return "failed";
+					}
+				}
+				
+			}.execute(null, null, null).get();
+			return result;
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			return "failed = some exception!";
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+			return "failed = some exception!";
+		}
 	}
 	
 	private String getThisTime() {
