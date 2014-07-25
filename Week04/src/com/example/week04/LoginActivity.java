@@ -78,11 +78,6 @@ public class LoginActivity extends Activity {
 					else {
 						Toast.makeText(LoginActivity.this, loginResult, Toast.LENGTH_SHORT).show();
 					}
-					
-					Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                    startActivity(intent);
-                    // Login successed. intro activity is no use; finish it!
-                    finish();
 				}
 				catch(Exception e) {
 					e.printStackTrace();

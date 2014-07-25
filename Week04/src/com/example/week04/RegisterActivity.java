@@ -20,6 +20,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
@@ -57,7 +58,7 @@ public class RegisterActivity extends Activity {
 	        	        finish();
 					}
 					else {
-						Toast.makeText(RegisterActivity.this, "Register failed!", Toast.LENGTH_SHORT).show();
+						Toast.makeText(RegisterActivity.this, "Register failed : " + result, Toast.LENGTH_SHORT).show();
 					}
 	    		} catch(Exception e) {
 	    			e.printStackTrace();
@@ -78,7 +79,7 @@ public class RegisterActivity extends Activity {
     	protected String doInBackground(String... arg) {
     		String email = new String(arg[0]);
     		String password = new String(arg[1]);
-    		
+
     		String serverURL = new Settings().getServerURL();
     		String URL = serverURL + "join";
     		
