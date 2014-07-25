@@ -60,9 +60,9 @@ public class LoginActivity extends Activity {
 		
 		// Check preference for autoLogin check. if there is. try to login.
 		SharedPreferences appPref = getSharedPreferences("appPref", 0);
-		String autoLoginId = appPref.getString("loginID", "");
-		if( !autoLoginId.isEmpty() && !regId.isEmpty() ) {
-			String autoLoginPassword = appPref.getString("loginPassword", ""); 
+		String autoLoginPassword = appPref.getString("loginPassword", ""); 
+		if( !autoLoginPassword.isEmpty() && !regId.isEmpty() ) {
+			String autoLoginId = appPref.getString("loginID", "");
 			try {
 				String loginResult = new doLogin().execute(autoLoginId, autoLoginPassword, regId).get();
 				if( loginResult.equals("success") ) {
@@ -95,11 +95,15 @@ public class LoginActivity extends Activity {
 						Toast.makeText(LoginActivity.this, "Login failed :: Blanked Token field!", Toast.LENGTH_SHORT).show();
 					}
 					else {
-						String loginResult = new doLogin().execute(emailInput, passInput).get();
+						String loginResult = new doLogin().execute(emailInput, passInput).get();						
 						if( loginResult.equals("success") ) {
+							SharedPreferences appPref = getSharedPreferences("appPref", 0);
+							SharedPreferences.Editor edit = appPref.edit();
+							edit.putString("loginID", emailInput);
 							if(checkBox.isChecked()) {
-								setAutoLogin(emailInput, passInput);
+								edit.putString("loginPassword", passInput);
 							}
+							edit.commit();
 							
 							startApp();
 						}
@@ -122,23 +126,6 @@ public class LoginActivity extends Activity {
 				startActivity(intent);
 			}
 		});
-	}
-	
-	
-	
-	void setAutoLogin(final String id, final String password) {
-		new AsyncTask<Void, Void, Void>() {
-			@Override
-			protected Void doInBackground(Void... params) {
-				SharedPreferences appPref = getSharedPreferences("appPref", 0);
-				SharedPreferences.Editor edit = appPref.edit();
-				edit.putString("loginID", id);
-				edit.putString("loginPassword", password);
-				edit.commit();
-
-				return null;
-			}
-		}.execute(null, null, null);
 	}
 	
 	 /**

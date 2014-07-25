@@ -13,16 +13,21 @@ import org.apache.http.util.EntityUtils;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.week04.adapter.KeywordRowAdapter;
 import com.example.week04.info.KeywordRowInfo;
@@ -36,6 +41,7 @@ public class MainActivity extends Activity {
 	// Server URL.
 	private String serverURL;
 	
+	// Keyword list components.
 	private KeywordRowAdapter rowAdapter;
 	private ArrayList<KeywordRowInfo> keywordList;
 	private ListView keywordListView;
@@ -43,9 +49,7 @@ public class MainActivity extends Activity {
 	private DBHelper mHelper;
 	
 	View mainView;
-	
-	private static String regid = "";
-	
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -66,9 +70,57 @@ public class MainActivity extends Activity {
 		// Set onclicklistener for Add button.
 		newKeywordView = (TextView) findViewById(R.id.keyword_new);
 		newKeywordView.setOnClickListener(newItemMaker);
-		
-		// Set GCM to device.
-		
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+	    // Inflate the menu items for use in the action bar
+	    MenuInflater inflater = getMenuInflater();
+	    inflater.inflate(R.menu.actionbar_buttons, menu);
+	    return super.onCreateOptionsMenu(menu);
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+	    // Handle presses on the action bar items
+	    switch (item.getItemId()) {
+	        case R.id.menubutton_scrap:
+	        	Intent intent = new Intent(this, ScrapActivity.class);
+				startActivity(intent);
+				break;
+	        case R.id.menubutton_logout:
+	        	AlertDialog.Builder alert = new AlertDialog.Builder(this);
+
+				alert.setTitle("Alert!");
+				alert.setMessage("Logout from Hummingbird?");
+
+				alert.setPositiveButton("Logout", new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int whichButton) {
+						SharedPreferences appPref = getSharedPreferences("appPref", 0);
+						SharedPreferences.Editor edit = appPref.edit();
+						edit.putString("loginPassword", "");
+						edit.commit();
+						Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+						intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+						startActivity(intent); 
+						finish();
+					}
+				});
+				alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int whichButton) {
+						// nothing happens.
+					}
+				});
+				
+				alert.show();
+				break;
+	        case R.id.menubutton_settings:
+	        	Toast.makeText(MainActivity.this, "Setting not implemented!", Toast.LENGTH_SHORT).show();
+	        	break;
+	        default:
+	            return super.onOptionsItemSelected(item);
+	    }
+	    return true;
 	}
 	
 	private void setKeywordList()  {
@@ -122,7 +174,7 @@ public class MainActivity extends Activity {
 						// Add keyword to ListView.
 						KeywordRowInfo newRow = new KeywordRowInfo();
 						newRow.setKeyword(value);
-						newRow.setLastUpdate(": Not updated yet");
+						newRow.setLastUpdate("Not updated yet");
 						newRow.setNotifyNumber(0);
 						newRow.setButtonVisible(false);
 						keywordList.add(newRow);
@@ -143,17 +195,13 @@ public class MainActivity extends Activity {
 	};
 	
 	private void sendKeywordRegistrationIdToBackend(final String newKeyword) {
-		if(regid.isEmpty()) {
-			SharedPreferences appPref = getSharedPreferences("appPref", 0);
-			regid = appPref.getString("gcmToken", "");
-			if(regid.isEmpty()) {
-				finish();
-			}
-		}
+		SharedPreferences appPref = getSharedPreferences("appPref", 0);
+		final String loginId = appPref.getString("loginID", "");
+		
     	new AsyncTask<Void, Void, String>() {
 			@Override
 			protected String doInBackground(Void... params) {
-				String URL = serverURL + "addId/" + regid + "/" + newKeyword;
+				String URL = serverURL + "addId/" + loginId + "/" + newKeyword;
 				DefaultHttpClient client = new DefaultHttpClient();
 	    		try {
 	    

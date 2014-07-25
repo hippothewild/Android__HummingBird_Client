@@ -15,14 +15,11 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.View.OnClickListener;
-import android.view.View.OnTouchListener;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.week04.ArticleActivity;
 import com.example.week04.R;
 import com.example.week04.info.DBHelper;
 import com.example.week04.info.ArticleRowInfo;
@@ -36,7 +33,7 @@ public class ArticleRowAdapter extends ArrayAdapter<ArticleRowInfo> {
 	private DBHelper mHelper;
 	
 	// Touch event variables.
-	private static final int SCROLL_ACTION_THRESHOLD = 40;
+	private static final int SCROLL_ACTION_THRESHOLD = 60;
 	private static final int SCROLL_MAX_OFF_PATH = 200;
     private boolean isScrolling = false;
     private int scrollDistance = 0;
@@ -52,7 +49,8 @@ public class ArticleRowAdapter extends ArrayAdapter<ArticleRowInfo> {
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent){
 		final ArticleRowInfo articleRow = mList.get(position);
-
+		final int pos = position;
+		
 		if(convertView == null){
 			convertView = mInflater.inflate(mResource, null);
 		}
@@ -81,27 +79,58 @@ public class ArticleRowAdapter extends ArrayAdapter<ArticleRowInfo> {
                 }
 				if (event.getAction() == MotionEvent.ACTION_UP) {
 					if (isScrolling) {
-						Log.i("OnTouchListener", "onTouch ACTION_UP");
-						if (scrollDistance < -SCROLL_ACTION_THRESHOLD) {
-							Toast.makeText(mContext, "scrap view!",
-									Toast.LENGTH_SHORT).show();
-							scrapImage.setVisibility(View.GONE);
-							scrapDelete.setVisibility(View.GONE);
-						} else if (scrollDistance > SCROLL_ACTION_THRESHOLD) {
-							Toast.makeText(mContext, "delete view!",
-									Toast.LENGTH_SHORT).show();
-							scrapImage.setVisibility(View.GONE);
-							scrapDelete.setVisibility(View.GONE);
-						} else {
-							Toast.makeText(mContext, "Nothing happens!",
-									Toast.LENGTH_SHORT).show();
+						if (scrapImage.getVisibility() == View.VISIBLE) {
+							// Insert article into scraped DB.
+							mHelper = new DBHelper(mContext);
+							SQLiteDatabase db = mHelper.getWritableDatabase();
+							String query = "INSERT OR IGNORE INTO SCRAPS(KEYWORD, TITLE, NEWS, DATE, CONTENT, LINK) VALUES('"
+									+ articleRow.getKeyword().replaceAll("'|&lt;|&quot;|&gt;", "''") + "', '"
+									+ articleRow.getTitle().replaceAll("'|&lt;|&quot;|&gt;", "''") + "', '"
+									+ articleRow.getNews().replaceAll("'|&lt;|&quot;|&gt;", "''") + "', '"
+									+ articleRow.getDate().replaceAll("'|&lt;|&quot;|&gt;", "''") + "', '"
+									+ articleRow.getContent().replaceAll("'|&lt;|&quot;|&gt;", "''") + "', '"
+									+ articleRow.getLink().replaceAll("'|&lt;|&quot;|&gt;", "''") + "');";
+							db.execSQL(query);
+							mHelper.close();
+							
+							// Make toast for user.
+							Toast.makeText(mContext, "Scrap complete!", Toast.LENGTH_SHORT).show();
 						}
+						else if (scrapDelete.getVisibility() == View.VISIBLE) {
+							AlertDialog.Builder alert = new AlertDialog.Builder(mContext);
+
+							alert.setTitle("Alert!");
+							alert.setMessage("Really delete this article?");
+
+							alert.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+								public void onClick(DialogInterface dialog, int whichButton) {
+									// Make row invisible in DB.
+									mHelper = new DBHelper(mContext);
+									SQLiteDatabase db = mHelper.getWritableDatabase();
+									String query = "UPDATE ARTICLES SET VISIBLE = 0 WHERE ID = " + articleRow.getId() + ";";
+									db.execSQL(query);
+									mHelper.close();
+									
+									// Delete row from listview.
+									mList.remove(pos);
+									notifyDataSetChanged();
+								}
+							});
+							alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+								public void onClick(DialogInterface dialog, int whichButton) {
+									// nothing hpppens.
+								}
+							});
+							
+							alert.show();
+						}
+						scrapImage.setVisibility(View.GONE);
+						scrapDelete.setVisibility(View.GONE);
 						isScrolling = false;
 						scrollDistance = 0;
 					} else {
 						// Touch event.
-						Intent intent = new Intent(Intent.ACTION_VIEW,
-								Uri.parse(articleRow.getLink()));
+						Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(articleRow.getLink()));
 						mContext.startActivity(intent);
 						isScrolling = false;
 						scrollDistance = 0;
@@ -118,11 +147,13 @@ public class ArticleRowAdapter extends ArrayAdapter<ArticleRowInfo> {
 	class MyGestureDetector extends SimpleOnGestureListener {
 		ImageView myScrapView;
 		ImageView myDeleteView;
+		float firstX;
 		
 		public MyGestureDetector(ImageView scrapView, ImageView deleteView)
 		{
 			myScrapView = scrapView;
 			myDeleteView = deleteView;
+			firstX = 0;
 		}
 		
         @Override
@@ -135,12 +166,12 @@ public class ArticleRowAdapter extends ArrayAdapter<ArticleRowInfo> {
             	}
             	
             	if(scrollDistance > SCROLL_ACTION_THRESHOLD) {
-            		myScrapView.setVisibility(View.VISIBLE);
-            		myDeleteView.setVisibility(View.GONE);
-            	}
-            	else if(scrollDistance < -SCROLL_ACTION_THRESHOLD) {
             		myScrapView.setVisibility(View.GONE);
             		myDeleteView.setVisibility(View.VISIBLE);
+            	}
+            	else if(scrollDistance < -SCROLL_ACTION_THRESHOLD) {
+            		myScrapView.setVisibility(View.VISIBLE);
+            		myDeleteView.setVisibility(View.GONE);
             	}
             	else {
             		myScrapView.setVisibility(View.GONE);
@@ -155,7 +186,8 @@ public class ArticleRowAdapter extends ArrayAdapter<ArticleRowInfo> {
 
         @Override
         public boolean onDown(MotionEvent e) {
-              return true;
+        	firstX = e.getX();
+            return true;
         }
     }
 

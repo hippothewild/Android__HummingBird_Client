@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+	<!-- Action button items -->
+    <item
+        android:id="@+id/menubutton_scrap"
+        android:icon="@drawable/scraped"
+        android:showAsAction="always"
+        android:title="Scraps"/>
+    <item
+        android:id="@+id/menubutton_settings"
+        android:icon="@drawable/settings"
+        android:showAsAction="always"
+        android:title="Settings"/>
+    <item
+        android:id="@+id/menubutton_logout"
+        android:icon="@drawable/logout"
+        android:showAsAction="always"
+        android:title="Logout"/>
+
+</menu>

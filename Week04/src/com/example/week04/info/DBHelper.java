@@ -12,17 +12,14 @@ public class DBHelper extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
+		// Keyword table.
 		String query = "CREATE TABLE KEYWORDS ( \r" 
 					 + "KEYWORD CHAR(128) PRIMARY KEY, \r"
 					 + "LASTUPDATE CHAR(64) DEFAULT 'Not updated yet', \r"
 					 + "NOTIFYNUMBER INTEGER DEFAULT 0);"; 
-		/* String query = "CREATE TABLE KEYWORDS ( \r" 
-					 + "ID INTEGER PRIMARY KEY AUTOINCREMENT, \r"
-					 + "KEYWORD CHAR(128) UNIQUE NOT NULL, \r"
-					 + "LASTUPDATE CHAR(64) DEFAULT '2000-01-01', \r"
-					 + "LASTVIEW CHAR(64) DEFAULT '2000-01-01');"; */
 		db.execSQL(query);
 		
+		// Article table.
 		query = "CREATE TABLE ARTICLES ( \r"
 			  + "ID INTEGER PRIMARY KEY AUTOINCREMENT, \r"
 			  + "KEYWORD CHAR(128) REFERENCES KEYWORDS(KEYWORD), \r"
@@ -30,12 +27,21 @@ public class DBHelper extends SQLiteOpenHelper {
 			  + "NEWS CHAR(64) NOT NULL, \r"
 			  + "DATE CHAR(64) NOT NULL, \r"
 			  + "CONTENT TEXT NOT NULL, \r"
-			  + "LINK TEXT UNIQUE NOT NULL);";
-		/* query = "CREATE TABLE ARTICLES ( \r" 
-			  + "ID INTEGER NOT NULL REFERENCES KEYWORDS(ID), \r"
+			  + "LINK TEXT UNIQUE NOT NULL, \r"
+			  + "VISIBLE INTEGER(1) DEFAULT 1"
+			  + ");";
+		db.execSQL(query);
+		
+		// Scraped article table.
+		query = "CREATE TABLE SCRAPS ( \r"
+			  + "ID INTEGER PRIMARY KEY AUTOINCREMENT, \r"
+			  + "KEYWORD CHAR(128) REFERENCES KEYWORDS(KEYWORD), \r"
+			  + "TITLE TEXT NOT NULL, \r"
+			  + "NEWS CHAR(64) NOT NULL, \r"
+			  + "DATE CHAR(64) NOT NULL, \r"
 			  + "CONTENT TEXT NOT NULL, \r"
-			  + "LINK TEXT NOT NULL, \r"
-			  + "PRIMARY KEY(ID));"; */
+			  + "LINK TEXT UNIQUE NOT NULL"
+			  + ");";
 		db.execSQL(query);
 	}
 
