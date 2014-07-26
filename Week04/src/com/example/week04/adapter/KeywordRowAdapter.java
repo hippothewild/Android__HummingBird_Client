@@ -121,7 +121,12 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
 			final String thisKeyword = keywordRow.getKeyword();
 			keywordName.setText(thisKeyword);
 			keywordLastUpdate.setText("Last Update : " + keywordRow.getLastUpdate());
-			notifyCount.setText(String.valueOf(keywordRow.getNotifyNumber()));
+			if(keywordRow.getNotifyNumber() > 0) {
+				notifyCount.setText(String.valueOf(keywordRow.getNotifyNumber()));
+			}
+			else {
+				notifyCount.setText("");
+			}
 			
 			// Set on-click listener to refresh button.
 			ImageView buttonRefresh = (ImageView) convertView.findViewById(R.id.btn_refresh);
@@ -295,9 +300,10 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
 	
 	private String deleteKeywordBackground(final String newKeyword) {
 		SharedPreferences appPref = mContext.getSharedPreferences("appPref", 0);
-		final String regid = appPref.getString("gcmToken", "");
+		final String loginId = appPref.getString("loginID", "");
+		
 		String result = "";
-		if(regid.isEmpty()) {
+		if(loginId.isEmpty()) {
 			return "failed = unable to get token!";
 		}
 		
@@ -305,7 +311,7 @@ public class KeywordRowAdapter extends ArrayAdapter<KeywordRowInfo> {
 			result = new AsyncTask<Void, Void, String>() {
 				@Override
 				protected String doInBackground(Void... params) {
-					String URL = serverURL + "deleteId/" + regid + "/" + newKeyword;
+					String URL = serverURL + "deleteId/" + loginId + "/" + newKeyword;
 					DefaultHttpClient client = new DefaultHttpClient();
 					
 					try {

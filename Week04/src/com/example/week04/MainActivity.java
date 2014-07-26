@@ -73,6 +73,12 @@ public class MainActivity extends Activity {
 	}
 	
 	@Override
+	protected void onResume() {
+	   super.onResume();
+	   setKeywordList();
+	}
+	
+	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 	    // Inflate the menu items for use in the action bar
 	    MenuInflater inflater = getMenuInflater();
