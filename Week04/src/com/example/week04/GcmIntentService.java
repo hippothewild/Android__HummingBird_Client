@@ -109,6 +109,8 @@ public class GcmIntentService extends IntentService {
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(this)
         .setSmallIcon(R.drawable.hummingbird_icon_small)
+        .setAutoCancel(true)
+        .setVibrate(new long[] { 0, 500, 200, 500 })
         .setContentTitle("Hummingbird")
         .setStyle(new NotificationCompat.BigTextStyle()
         .bigText(msg))

@@ -111,7 +111,8 @@ public class IntroActivity extends Activity {
 				        }
 						
 						// Make up app's first preference for user.
-						registerKeyword(regid, inputText);
+						String userId = getSharedPreferences("appPref", 0).getString("loginID", ""); 
+						registerKeyword(userId, inputText);
 						getArticleInBackground(inputText);
 						appMakeUp(inputText);
 						
