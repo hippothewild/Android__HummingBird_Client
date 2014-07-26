@@ -1,6 +1,8 @@
 package com.example.week04;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -9,6 +11,9 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -20,6 +25,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -32,6 +38,7 @@ import android.widget.Toast;
 import android.widget.ViewFlipper;
 
 import com.example.week04.info.DBHelper;
+import com.example.week04.info.KeywordRowInfo;
 import com.example.week04.info.Settings;
 
 import android.util.Log;
@@ -50,6 +57,7 @@ public class IntroActivity extends Activity {
 	
 	private ViewFlipper viewFlipper;
     private float lastX;
+    private DBHelper mHelper;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -104,6 +112,7 @@ public class IntroActivity extends Activity {
 						
 						// Make up app's first preference for user.
 						registerKeyword(regid, inputText);
+						getArticleInBackground(inputText);
 						appMakeUp(inputText);
 						
 						// Load main activity.
@@ -271,5 +280,105 @@ public class IntroActivity extends Activity {
     		
     	}.execute(null, null, null);
     }
+    
+	private void getArticleInBackground(final String keyword) {
+		new AsyncTask<Void, Void, String>() {
+        	private String resultMessage;
+        	 
+			@Override
+			protected String doInBackground(Void... params) {
+				String URL = serverURL + "getArticle/" + keyword;
+				Log.i("URL", URL);
+				DefaultHttpClient client = new DefaultHttpClient();
+				String result;
+	    		try {
+	    			// Make connection to server.
+	    			Log.i("Connection", "Make connection to server");
+	    			HttpParams connectionParams = client.getParams();
+	    			HttpConnectionParams.setConnectionTimeout(connectionParams, 5000);
+	    			HttpConnectionParams.setSoTimeout(connectionParams, 5000);
+	    			HttpGet httpGet = new HttpGet(URL);
+	    			
+	    			// Get response and parse entity.
+	    			Log.i("Connection", "Get response and parse entity.");
+	    			HttpResponse responsePost = client.execute(httpGet);
+	    			HttpEntity resEntity = responsePost.getEntity(); 			
+	    			
+	    			// Parse result to string.
+	    			Log.i("Connection", "Parse result to string.");
+	    			result = EntityUtils.toString(resEntity);
+	    			result = result.replaceAll("'|&lt;|&quot;|&gt;", "''");
+	    		} catch (Exception e) {
+	    			e.printStackTrace();
+	    			Toast.makeText(IntroActivity.this.getApplicationContext(), "Some error in server!", Toast.LENGTH_SHORT).show();
+	    			result = "";
+	    		}
+	    		Log.i("Connection", "connection complete");
+	    		
+	    		client.getConnectionManager().shutdown();	// Disconnect.
+	    		return result;
+			}
+
+			@Override
+		    protected void onPostExecute(String result) {
+				if( !result.isEmpty() ) {
+					try {
+						JSONArray articleArray = new JSONArray(result);
+						int arrayLength = articleArray.length();
+						int updatedRow = 0;
+						mHelper = new DBHelper(IntroActivity.this.getApplicationContext());
+						SQLiteDatabase db = mHelper.getWritableDatabase();
+						for(int i = 0; i < arrayLength; i++) {
+							Log.i("Connection", i + "th JSONObject");
+							JSONObject articleObject = articleArray.getJSONObject(i);
+							String title = articleObject.getString("Title");
+							Log.i("Connection", title);
+							String link = articleObject.getString("Link");
+							String date = articleObject.getString("Date");
+							String news = articleObject.getString("News");
+							String content = articleObject.getString("Head");
+							String query = "INSERT INTO ARTICLES(KEYWORD, TITLE, NEWS, DATE, CONTENT, LINK) VALUES('"
+										 + keyword + "', '" + title + "', '" + news + "', '" + date + "', '" + content + "', '" + link + "');";
+							try {
+								updatedRow++;
+								db.execSQL(query);
+							}
+							catch(SQLException e) {
+								updatedRow--;
+								Log.i("SQL inserting", "SQL exception : duplicate row?");
+							}
+						}
+						
+						String thisTime = getThisTime();
+						String query = "UPDATE KEYWORDS SET LASTUPDATE = '" + thisTime + "' WHERE KEYWORD = '" + keyword + "';";
+						db.execSQL(query);
+						
+						mHelper.close();
+
+						if(updatedRow > 0) {
+							resultMessage = "Article loading complete!";
+						}
+						else {
+							resultMessage = "Loading complete - No fresh news.";
+						}
+					} catch (JSONException e) {
+						e.printStackTrace();
+						resultMessage = "Error in article loading - problem in JSONArray?";
+					}
+				}
+				else {
+					resultMessage = "Error in receiving articles!";
+				}
+				Log.i("IntroActivity", resultMessage);
+			}
+        }.execute(null, null, null);
+    }
+	
+	private String getThisTime() {
+		Date from = new Date();
+		SimpleDateFormat transFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		String to = transFormat.format(from);
+		return to;
+	}
 }
 
