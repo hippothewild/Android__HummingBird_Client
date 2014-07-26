@@ -1,6 +1,8 @@
 package com.example.week04;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -9,21 +11,28 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -63,6 +72,29 @@ public class MainActivity extends Activity {
 		keywordList = new ArrayList<KeywordRowInfo>();
 		rowAdapter = new KeywordRowAdapter(this, R.layout.keyword_row, keywordList);
 		keywordListView.setAdapter(rowAdapter);
+		
+		// Make listview scrollable.
+		keywordListView.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				int action = event.getAction();
+				switch (action) {
+				case MotionEvent.ACTION_DOWN:
+					// Disallow ScrollView to intercept touch events.
+					v.getParent().requestDisallowInterceptTouchEvent(true);
+					break;
+
+				case MotionEvent.ACTION_UP:
+					// Allow ScrollView to intercept touch events.
+					v.getParent().requestDisallowInterceptTouchEvent(false);
+					break;
+				}
+
+				// Handle ListView touch events.
+				v.onTouchEvent(event);
+				return true;
+			}
+		});
 		
 		// Update information of keyword list.
 		setKeywordList();
@@ -169,8 +201,10 @@ public class MainActivity extends Activity {
 				public void onClick(DialogInterface dialog, int whichButton) {
 					String value = input.getText().toString().trim();
 					if( !value.isEmpty() ) {
-						// Add input keyword to server inBackground.
+						// Add input keyword to server inBackground and crawl data.
 						sendKeywordRegistrationIdToBackend(value);
+						KeywordRowInfo newRow = new KeywordRowInfo();
+						getArticleInBackground(value, newRow);
 						
 						// Add input keyword into DB.
 						SQLiteDatabase db = mHelper.getWritableDatabase();
@@ -178,7 +212,6 @@ public class MainActivity extends Activity {
 						db.execSQL(query);
 						
 						// Add keyword to ListView.
-						KeywordRowInfo newRow = new KeywordRowInfo();
 						newRow.setKeyword(value);
 						newRow.setLastUpdate("Not updated yet");
 						newRow.setNotifyNumber(0);
@@ -234,5 +267,109 @@ public class MainActivity extends Activity {
 			}
     		
     	}.execute(null, null, null);
+	}
+	
+	private void getArticleInBackground(final String keyword, final KeywordRowInfo keywordRow) {
+		new AsyncTask<Void, Void, String>() {
+        	private String resultMessage;
+        	 
+			@Override
+			protected String doInBackground(Void... params) {
+				String URL = serverURL + "getArticle/" + keyword;
+				Log.i("URL", URL);
+				DefaultHttpClient client = new DefaultHttpClient();
+				String result;
+	    		try {
+	    			// Make connection to server.
+	    			Log.i("Connection", "Make connection to server");
+	    			HttpParams connectionParams = client.getParams();
+	    			HttpConnectionParams.setConnectionTimeout(connectionParams, 5000);
+	    			HttpConnectionParams.setSoTimeout(connectionParams, 5000);
+	    			HttpGet httpGet = new HttpGet(URL);
+	    			
+	    			// Get response and parse entity.
+	    			Log.i("Connection", "Get response and parse entity.");
+	    			HttpResponse responsePost = client.execute(httpGet);
+	    			HttpEntity resEntity = responsePost.getEntity(); 			
+	    			
+	    			// Parse result to string.
+	    			Log.i("Connection", "Parse result to string.");
+	    			result = EntityUtils.toString(resEntity);
+	    			result = result.replaceAll("'|&lt;|&quot;|&gt;", "''");
+	    		} catch (Exception e) {
+	    			e.printStackTrace();
+	    			Toast.makeText(MainActivity.this.getApplicationContext(), "Some error in server!", Toast.LENGTH_SHORT).show();
+	    			result = "";
+	    		}
+	    		Log.i("Connection", "connection complete");
+	    		
+	    		client.getConnectionManager().shutdown();	// Disconnect.
+	    		return result;
+			}
+
+			@Override
+		    protected void onPostExecute(String result) {
+				if( !result.isEmpty() ) {
+					try {
+						JSONArray articleArray = new JSONArray(result);
+						int arrayLength = articleArray.length();
+						int updatedRow = 0;
+						mHelper = new DBHelper(MainActivity.this.getApplicationContext());
+						SQLiteDatabase db = mHelper.getWritableDatabase();
+						for(int i = 0; i < arrayLength; i++) {
+							Log.i("Connection", i + "th JSONObject");
+							JSONObject articleObject = articleArray.getJSONObject(i);
+							String title = articleObject.getString("Title");
+							Log.i("Connection", title);
+							String link = articleObject.getString("Link");
+							String date = articleObject.getString("Date");
+							String news = articleObject.getString("News");
+							String content = articleObject.getString("Head");
+							String query = "INSERT INTO ARTICLES(KEYWORD, TITLE, NEWS, DATE, CONTENT, LINK) VALUES('"
+										 + keyword + "', '" + title + "', '" + news + "', '" + date + "', '" + content + "', '" + link + "');";
+							try {
+								updatedRow++;
+								db.execSQL(query);
+							}
+							catch(SQLException e) {
+								updatedRow--;
+								Log.i("SQL inserting", "SQL exception : duplicate row?");
+							}
+						}
+						
+						String thisTime = getThisTime();
+						String query = "UPDATE KEYWORDS SET LASTUPDATE = '" + thisTime + "' WHERE KEYWORD = '" + keyword + "';";
+						db.execSQL(query);
+						
+						mHelper.close();
+						
+						// Count new article and set data into view.
+						keywordRow.setLastUpdate(thisTime);
+						keywordRow.setNotifyNumber(updatedRow);
+						
+						if(updatedRow > 0) {
+							resultMessage = "Article loading complete!";
+						}
+						else {
+							resultMessage = "Loading complete - No fresh news.";
+						}
+					} catch (JSONException e) {
+						e.printStackTrace();
+						resultMessage = "Error in article loading - problem in JSONArray?";
+					}
+				}
+				else {
+					resultMessage = "Error in receiving articles!";
+				}
+				Toast.makeText(MainActivity.this.getApplicationContext(), resultMessage, Toast.LENGTH_SHORT).show();
+			}
+        }.execute(null, null, null);
+    }
+	
+	private String getThisTime() {
+		Date from = new Date();
+		SimpleDateFormat transFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		String to = transFormat.format(from);
+		return to;
 	}
 }
